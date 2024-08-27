@@ -42,8 +42,10 @@ var tasks = map[string]Task{
 
 // Обработчик для получения всех задач:
 func getTasks(w http.ResponseWriter, r *http.Request) {
-	// сериализуем данные из слайса tasks
+	// сериализуем данные из мапы tasks
 	resp, err := json.Marshal(tasks)
+
+	// статус 500 Internal Server Error
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -70,6 +72,7 @@ func postTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// десериализуем данные из мапы tasks
 	if err = json.Unmarshal(buf.Bytes(), &tasks); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -77,61 +80,84 @@ func postTask(w http.ResponseWriter, r *http.Request) {
 
 	tasks[task.ID] = task
 
+	// запись в заголовок
 	w.Header().Set("Content-Type", "application/json")
+
+	// статус 201 Created
 	w.WriteHeader(http.StatusCreated)
 }
 
 // Обработчик для получения задачи по ID:
 func getTask(w http.ResponseWriter, r *http.Request) {
+	// id из url праметра
 	id := chi.URLParam(r, "id")
 
+	// проверка на наличие задачи в мапе tasks
 	task, ok := tasks[id]
+
+	// статус 400 Bad Request
 	if !ok {
-		http.Error(w, "Задача не найдена", http.StatusNoContent)
+		http.Error(w, "Задача не найдена", http.StatusBadRequest)
 		return
 	}
 
+	// сериализуем данные из мапы tasks
 	resp, err := json.Marshal(task)
+
+	// статус 400 Bad Request
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	// запись в заголовок
 	w.Header().Set("Content-Type", "application/json")
+
+	// статус OK
 	w.WriteHeader(http.StatusOK)
+
+	// запись сериализованных данных json в тело ответа
 	w.Write(resp)
 }
 
 // Обработчик удаления задачи по ID:
 func deleteTask(w http.ResponseWriter, r *http.Request) {
+	// id из url праметра
 	id := chi.URLParam(r, "id")
 
-	// проверка на наличие задачи
+	// проверка на наличие задачи в мапе tasks
 	_, ok := tasks[id]
+
+	// статус 400 Bad Request
 	if !ok {
-		http.Error(w, "Задача не найдена", http.StatusNoContent)
+		http.Error(w, "Задача не найдена", http.StatusBadRequest)
 		return
 	}
 
+	//удаление задачи по id
 	delete(tasks, id)
+
+	// статус OK
 	w.WriteHeader(http.StatusOK)
 }
 
 func main() {
+	// роутер
 	r := chi.NewRouter()
 
-	// Обработчик для получения всех задач:
+	// Обработчик для получения всех задач
 	r.Get("/tasks", getTasks)
 
-	// Обработчик для отправки задачи на сервер:
+	// Обработчик для отправки задачи на сервер
 	r.Post("/tasks", postTask)
 
-	// Обработчик для получения задачи по ID:
+	// Обработчик для получения задачи по id
 	r.Get("/tasks/{id}", getTask)
 
-	// Обработчик удаления задачи по ID:
+	// Обработчик удаления задачи по id
 	r.Delete("/tasks/{id}", deleteTask)
 
+	// сервер
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		fmt.Printf("Ошибка при запуске сервера: %s", err.Error())
 		return

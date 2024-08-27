@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -59,6 +60,26 @@ func getTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 // Обработчик для отправки задачи на сервер:
+func postTask(w http.ResponseWriter, r *http.Request) {
+	var task Task
+	var buf bytes.Buffer
+
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = json.Unmarshal(buf.Bytes(), &tasks); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	tasks[task.ID] = task
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+}
 
 // Обработчик для получения задачи по ID:
 
@@ -71,7 +92,7 @@ func main() {
 	r.Get("/tasks", getTasks)
 
 	// Обработчик для отправки задачи на сервер:
-	//r.Post("/taksks", postTask)
+	r.Post("/tasks", postTask)
 
 	// Обработчик для получения задачи по ID:
 	//r.Get("/tasks/{id}", getTask)

@@ -103,6 +103,19 @@ func getTask(w http.ResponseWriter, r *http.Request) {
 }
 
 // Обработчик удаления задачи по ID:
+func deleteTask(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	// проверка на наличие задачи
+	_, ok := tasks[id]
+	if !ok {
+		http.Error(w, "Задача не найдена", http.StatusNoContent)
+		return
+	}
+
+	delete(tasks, id)
+	w.WriteHeader(http.StatusOK)
+}
 
 func main() {
 	r := chi.NewRouter()
@@ -117,7 +130,7 @@ func main() {
 	r.Get("/tasks/{id}", getTask)
 
 	// Обработчик удаления задачи по ID:
-	//r.Delete("/tasks/{id}", deleteTask)
+	r.Delete("/tasks/{id}", deleteTask)
 
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		fmt.Printf("Ошибка при запуске сервера: %s", err.Error())
